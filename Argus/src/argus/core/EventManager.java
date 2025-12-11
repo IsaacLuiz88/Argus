@@ -15,28 +15,28 @@ public class EventManager {
     private final String examName;
     private final String prefix;
     private final EventLogger logger;
-	
+
 	private long lastFocusLostTime = 0;
 	private long lastFocusGainedTime = 0;
 	private long lastMouseClickTime = 0;
 	private Shell shell;
-	
+
 	private static final long FOCUS_DEBOUNCE_MS = 300;
 	private static final long GAINED_GRACE_PERIOD_MS = 500;
 	private static final long FOCUS_THROTTLE_MS = 20;
-	
-	public EventManager(Display display, Shell shell, String studentName, String examName) {
+
+	public EventManager(Display display, Shell shell) {
 		this.display = display;
 		this.serverUrl = ConfigLoader.getServerUrl();
 		this.shell = shell;
-		
-		this.studentName = studentName;
-		this.examName = examName;
-		this.prefix = studentName + "_" + examName;
-		
+
+		this.studentName = SharedContext.getStudent();
+		this.examName = SharedContext.getExam();
+		this.prefix = SharedContext.getPrefix();
+
 		this.logger = new EventLogger(EventLogger.Format.JSON, prefix, this.serverUrl);
 	}
-	
+
 	public void startListener() {
         // Listener de teclado
         display.addFilter(org.eclipse.swt.SWT.KeyDown, e -> {
@@ -53,7 +53,7 @@ public class EventManager {
             sendEventAsync(json);
             System.out.println(json);
         });
-		
+
 		// Listener de mouse
         display.addFilter(SWT.MouseDown, e -> {
         	lastMouseClickTime = System.currentTimeMillis();
@@ -63,11 +63,11 @@ public class EventManager {
             sendEventAsync(json);
             System.out.println(json);
         });
-        
+
      // Listener de PERDA de foco (Alt+Tab, clicar em outra janela)
         shell.addListener(SWT.Deactivate, e -> {
             long now = System.currentTimeMillis();
-            
+
             if (now - lastFocusGainedTime < GAINED_GRACE_PERIOD_MS) return;
             if (now - lastFocusGainedTime > FOCUS_DEBOUNCE_MS) {
                 if (now - lastFocusLostTime > FOCUS_THROTTLE_MS) {
@@ -77,7 +77,6 @@ public class EventManager {
             }
         });
 
-        
         // Listener de GANHO de foco (voltar para a janela)
         shell.addListener(SWT.Activate, e -> {
             long now = System.currentTimeMillis();
@@ -89,13 +88,12 @@ public class EventManager {
                 }
             }
         });
-
     }
-	
+
 	private void sendEventAsync(String json) {
 		logger.logEvent(json);
     }
-	
+
 	private void sendFocusLost() {
 	    String json = String.format(
 	        "{\"type\":\"focus\",\"action\":\"FOCUS_LOST\",\"time\":%d,\"student\":\"%s\",\"exam\":\"%s\"}",
@@ -103,7 +101,7 @@ public class EventManager {
 	    sendEventAsync(json);
 	    System.out.println(json);
 	}
-	
+
 	private void sendFocusGained() {
 	    String json = String.format(
 	        "{\"type\":\"focus\",\"action\":\"FOCUS_GAINED\",\"time\":%d,\"student\":\"%s\",\"exam\":\"%s\"}",
@@ -112,27 +110,3 @@ public class EventManager {
 	    System.out.println(json);
 	}
 }
-        /*new Thread(() -> {
-            try {
-                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                        .uri(java.net.URI.create(serverUrl))
-                        .header("Content-Type", "application/json")
-                        .POST(java.net.http.HttpRequest.BodyPublishers.ofString(json))
-                        .build();
-
-                logger.logEvent(json);
-                
-                client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())
-                        .thenAccept(response -> {
-                            System.out.println("Servidor respondeu: " + response.statusCode());
-                        })
-                        .exceptionally(ex -> {
-                            System.err.println("Erro na comunicação com o servidor: " + ex.getMessage());
-                            return null;
-                        });
-            } catch (Exception ex) {
-                System.err.println("Falha ao enviar evento: " + ex.getMessage());
-            }
-        }).start();*/
-

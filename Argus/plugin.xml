@@ -6,25 +6,25 @@
          point="org.eclipse.ui.commands">
       <category
             id="Argus.commands.category"
-            name="Sample Category">
+            name="Argus Category">
       </category>
       <command
             categoryId="Argus.commands.category"
-            name="Sample Command"
-            id="Argus.commands.sampleCommand">
+            name="Argus Command"
+            id="Argus.commands.argusCommand">
       </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
       <handler
-            class="argus.handlers.SampleHandler"
-            commandId="Argus.commands.sampleCommand">
-      </handler>
+	         class="argus.ArgusApp.ArgusApp"
+	         commandId="Argus.commands.argusCommand">
+	   </handler>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
       <key
-            commandId="Argus.commands.sampleCommand"
+            commandId="Argus.commands.argusCommand"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             contextId="org.eclipse.ui.contexts.window"
             sequence="M1+6">
@@ -36,12 +36,12 @@
             locationURI="menu:org.eclipse.ui.main.menu?after=additions">
          <menu
                id="Argus.menus.sampleMenu"
-               label="Sample Menu"
-               mnemonic="M">
+               label="Argus Menu"
+               mnemonic="A">
             <command
-                  commandId="Argus.commands.sampleCommand"
+                  commandId="Argus.commands.argusCommand"
                   id="Argus.menus.sampleCommand"
-                  mnemonic="S">
+                  mnemonic="R">
             </command>
          </menu>
       </menuContribution>
@@ -51,8 +51,8 @@
                id="Argus.toolbars.sampleToolbar">
             <command
                   id="Argus.toolbars.sampleCommand"
-                  commandId="Argus.commands.sampleCommand"
-                  icon="icons/sample.png"
+                  commandId="Argus.commands.argusCommand"
+                  icon="icons/Argus_Mascote_20250825_2025.png"
                   tooltip="Say hello world">
             </command>
          </toolbar>

@@ -20,22 +20,22 @@ public class EventLogger {
 
 	private static final String LOG_DIR = System.getProperty("user.home") + "/ArgusLogs/";
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-	
+
 	public enum Format { LOG, JSON }
-	
+
 	private final Format format;
 	private final String fileNamePrefix;
     private final String serverUrl;
     private final ExecutorService executor;
     private final HttpClient httpClient;
-    
+
 	public EventLogger(Format format, String fileNamePrefix, String serverUrl) {
         this.format = format;
         this.fileNamePrefix = fileNamePrefix != null ? fileNamePrefix : "events";
         this.serverUrl = serverUrl;
         this.executor = Executors.newSingleThreadExecutor();
         this.httpClient = HttpClient.newHttpClient();
-        
+
         try {
             Files.createDirectories(Paths.get(LOG_DIR));
         } catch (IOException e) {
@@ -54,14 +54,13 @@ public class EventLogger {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         // 2. Envia para o servidor de forma assíncrona
         if (serverUrl != null && !serverUrl.isEmpty()) {
         	executor.submit(() -> sendToServer(json));
         }
 	}
-	
-	
+
 	private void sendToServer(String json) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -82,31 +81,14 @@ public class EventLogger {
             System.err.println("[Argus] Falha ao criar requisição: " + ex.getMessage());
         }
     }
-	
+
 	private String getFileName() {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyy"));
         // Correção: Você não estava usando o 'fileNamePrefix'
         return fileNamePrefix + "_" + date + (format == Format.LOG ? ".log" : ".json");
     }
-	
+
 	public void shutdown() {
         executor.shutdown();
     }
 }
-	/*
-	private void sendToServer(String json) {
-        try {
-            URL url = new URL(serverUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-            conn.getOutputStream().write(json.getBytes());
-            conn.getInputStream().close(); // apenas para completar o request
-            conn.disconnect();
-        } catch (Exception e) {
-            System.err.println("[Argus] Falha ao enviar evento para o servidor: " + e.getMessage());
-        }
-    }*/
-	
-

@@ -116,18 +116,17 @@ public class KeyTranslator {
         KEY_MAP.put((int) '>', "MAIOR_QUE");
         KEY_MAP.put((int) '?', "INTERROGAÇÃO");
     }
-    
+
     public static String translate(int keyCode) {
         String keyName = KEY_MAP.get(keyCode);
         if (keyName != null) {
             return keyName;
         }
-        
+
         // Para códigos não mapeados, tenta converter para caractere
         if (keyCode >= 32 && keyCode <= 126) {
             return String.valueOf((char) keyCode);
         }
-        
         return "DESCONHECIDO(" + keyCode + ")";
     }
 }

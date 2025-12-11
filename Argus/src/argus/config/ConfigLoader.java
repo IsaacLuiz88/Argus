@@ -12,7 +12,7 @@ public class ConfigLoader {
                 System.err.println("Arquivo config.properties não encontrado!");
                 return "http://localhost:8080/api/event"; // fallback
             }
-        	
+
         	Properties prop = new Properties();
             prop.load(input);
             return prop.getProperty("server.url", "http://localhost:8080/api/event");

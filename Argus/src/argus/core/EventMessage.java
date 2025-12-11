@@ -8,7 +8,7 @@ public class EventMessage {
     private String code;
     private String level;
     private long timestamp;
-    
+
 	public String getStudent() {
 		return student;
 	}
