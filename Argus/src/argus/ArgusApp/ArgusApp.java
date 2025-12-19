@@ -1,5 +1,8 @@
 package argus.ArgusApp;
 
+import java.net.URI;
+import java.net.http.*;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -25,13 +28,34 @@ public class ArgusApp extends AbstractHandler {
 				"Anonimo");
 		String examName = showLoginDialog(shell, "Identificação da Prova", "Insira o nome do exame/projeto:", "Teste");
 
-		// --- 2. SALVAR GLOBALMENTE PARA TODO O SISTEMA ---
+		// 2. SALVAR GLOBALMENTE PARA TODO O SISTEMA ---
 		SharedContext.init(studentName, examName);
+
+		// 3 Registrar sessão no servidor
+		HttpClient client = HttpClient.newHttpClient();
+		String json = String.format(
+		    "{\"student\":\"%s\",\"exam\":\"%s\",\"session\":\"%s\"}",
+		    SharedContext.student(),
+		    SharedContext.exam(),
+		    SharedContext.session()
+		);
+
+		HttpRequest request = HttpRequest.newBuilder()
+		    .uri(URI.create("http://localhost:8080/api/session/start"))
+		    .header("Content-Type", "application/json")
+		    .POST(HttpRequest.BodyPublishers.ofString(json))
+		    .build();
+		client.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+	      .thenRun(() -> System.out.println("[Argus] Sessão registrada com sucesso"))
+	      .exceptionally(ex -> {
+	          System.err.println("[Argus] Falha ao registrar sessão: " + ex.getMessage());
+	          return null;
+	      });
 
 		// Mensagem inicial
 		MessageDialog.openInformation(shell, "Argus", "Good lucky, " + studentName);
 
-		// --- 3. INICIAR GESTOR DE EVENTOS (EventManager) ---
+		// 4 INICIAR GESTOR DE EVENTOS (EventManager) ---
 		org.eclipse.swt.widgets.Display display = shell.getDisplay();
 		EventManager manager = new EventManager(display, shell);
 		manager.startListener();

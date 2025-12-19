@@ -30,9 +30,9 @@ public class EventManager {
 		this.serverUrl = ConfigLoader.getServerUrl();
 		this.shell = shell;
 
-		this.studentName = SharedContext.getStudent();
-		this.examName = SharedContext.getExam();
-		this.prefix = SharedContext.getPrefix();
+		this.studentName = SharedContext.student();
+		this.examName = SharedContext.exam();
+		this.prefix = SharedContext.session();
 
 		this.logger = new EventLogger(EventLogger.Format.JSON, prefix, this.serverUrl);
 	}

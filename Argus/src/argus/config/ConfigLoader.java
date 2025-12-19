@@ -7,7 +7,7 @@ import java.util.Properties;
 public class ConfigLoader {
 
 	public static String getServerUrl() {
-        try (InputStream input = ConfigLoader.class.getResourceAsStream("/argus/config/config.properties")) {
+        try (InputStream input = ConfigLoader.class.getResourceAsStream("/config/config.properties")) {
         	if (input == null) {
                 System.err.println("Arquivo config.properties não encontrado!");
                 return "http://localhost:8080/api/event"; // fallback
