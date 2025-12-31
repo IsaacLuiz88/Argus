@@ -10,6 +10,8 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import argus.core.SharedContext;
+import argus.config.ConfigLoader;
+import argus.core.CommandSocketClient;
 import argus.core.EventManager;
 
 import org.eclipse.jface.dialogs.InputDialog;
@@ -24,10 +26,12 @@ public class ArgusApp extends AbstractHandler {
 		Shell shell = window.getShell();
 
 		// --- 1. COLETAR DADOS DO ALUNO ---
-		String studentName = showLoginDialog(shell, "Identificação do Aluno", "Insira seu nome ou matrícula:",
-				"Anonimo");
-		String examName = showLoginDialog(shell, "Identificação da Prova", "Insira o nome do exame/projeto:", "Teste");
+		String studentName = showLoginDialog(shell, "Identificação do Aluno", "Insira seu nome ou matrícula:", "Anonimo");
+		if (studentName == null) { MessageDialog.openInformation(shell, "Argus", "Inicialização cancelada."); return null;}
 
+		String examName = showLoginDialog(shell, "Identificação da Prova", "Insira o nome do exame/projeto:", "Teste");
+		if(examName == null) { MessageDialog.openInformation(shell, "Argus", "Inicialização cancelada."); return null;}
+		
 		// 2. SALVAR GLOBALMENTE PARA TODO O SISTEMA ---
 		SharedContext.init(studentName, examName);
 
@@ -40,8 +44,10 @@ public class ArgusApp extends AbstractHandler {
 		    SharedContext.session()
 		);
 
+		String baseUrl = ConfigLoader.getServerUrl().replace("/api/event", "");
 		HttpRequest request = HttpRequest.newBuilder()
-		    .uri(URI.create("http://localhost:8080/api/session/start"))
+		    .uri(URI.create(baseUrl + "/api/session/start"))
+			//.uri(URI.create("http://localhost:8080/api/session/start"))
 		    .header("Content-Type", "application/json")
 		    .POST(HttpRequest.BodyPublishers.ofString(json))
 		    .build();
@@ -60,6 +66,10 @@ public class ArgusApp extends AbstractHandler {
 		EventManager manager = new EventManager(display, shell);
 		manager.startListener();
 
+		CommandSocketClient socket =
+			    new CommandSocketClient(manager);
+			socket.connect(SharedContext.student());
+
 		return null;
 	}
 
@@ -73,8 +83,6 @@ public class ArgusApp extends AbstractHandler {
 			// Retorna o valor, ou o padrão se estiver vazio
 			return (value == null || value.trim().isEmpty()) ? defaultValue : value.trim();
 		}
-
-		// Se o usuário clicar Cancelar, retorna o padrão
-		return defaultValue;
+		return null;
 	}
 }

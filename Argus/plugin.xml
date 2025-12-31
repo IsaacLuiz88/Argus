@@ -52,7 +52,7 @@
             <command
                   id="Argus.toolbars.sampleCommand"
                   commandId="Argus.commands.argusCommand"
-                  icon="icons/Argus_Mascote_20250825_2025.png"
+                  icon="icons/Argus_Mascote_20250825_2025_16x24.png"
                   tooltip="Say hello world">
             </command>
          </toolbar>

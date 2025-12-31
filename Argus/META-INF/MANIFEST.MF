@@ -2,13 +2,18 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Argus
 Bundle-SymbolicName: Argus;singleton:=true
-Bundle-Version: 1.0.0.202511271338
+Bundle-Version: 1.0.0.202512261420
 Export-Package: argus.ArgusApp
 Require-Bundle: org.eclipse.swt,org.eclipse.jface,org.eclipse.ui,org.e
  clipse.core.runtime;bundle-version="3.34.0",org.eclipse.ui.browser;bu
  ndle-version="3.8.600"
 Automatic-Module-Name: Argus
-Bundle-ClassPath: lib/jackson-core-2.20.0.jar,lib/jackson-annotations-
- 3.0-rc5.jar,lib/jackson-databind-2.20.0.jar,.
+Bundle-ClassPath: lib/jackson-core-2.20.0.jar,
+ lib/jackson-annotations-3.0-rc5.jar,
+ lib/jackson-databind-2.20.0.jar,
+ lib/spring-messaging-7.0.1.jar,
+ lib/spring-websocket-7.0.1.jar,
+ .,
+ lib/
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 

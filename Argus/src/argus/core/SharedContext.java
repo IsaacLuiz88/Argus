@@ -9,8 +9,7 @@ public class SharedContext {
     public static void init(String student, String exam) {
         studentName = student;
         examName = exam;
-        session = student + "_" + exam + "_" + java.time.LocalDate.now()
-        	.format(java.time.format.DateTimeFormatter.ofPattern("ddMMyyyy"));
+        session = student + "_" + exam;
     }
 
     public static String student() { return studentName; }

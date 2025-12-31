@@ -11,12 +11,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class EventLogger {
+public class EventLogger implements AutoCloseable {
 
 	private static final String LOG_DIR = System.getProperty("user.home") + "/ArgusLogs/";
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
@@ -84,11 +82,19 @@ public class EventLogger {
 
 	private String getFileName() {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyy"));
-        // Correção: Você não estava usando o 'fileNamePrefix'
         return fileNamePrefix + "_" + date + (format == Format.LOG ? ".log" : ".json");
     }
 
 	public void shutdown() {
-        executor.shutdown();
+		try {
+	        executor.shutdown();
+	    } catch (Exception e) {
+	        System.err.println("[Argus] Erro ao finalizar logger: " + e.getMessage());
+	    }
     }
+	
+	@Override
+	public void close() {
+	    shutdown();
+	}
 }
