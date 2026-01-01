@@ -1,89 +1,122 @@
 # Argus — Eclipse Monitoring Plugin
 
-Argus é um **plugin para Eclipse** voltado ao monitoramento de atividades do usuário durante avaliações, exames práticos ou projetos supervisionados.  
-Ele atua como o **cliente principal** do ecossistema Argus, coletando eventos de interação e enviando-os para um servidor central para análise.
+Argus é um **plugin para Eclipse** desenvolvido para **monitoramento de atividades do usuário** durante avaliações, exames práticos ou projetos supervisionados.
+Ele atua como o **cliente principal do ecossistema Argus**, sendo responsável por capturar eventos relevantes no ambiente de desenvolvimento e enviá-los para um servidor central para análise e auditoria.
 
 ---
 
 ## 🎯 Objetivo
 
-O objetivo do Argus é registrar **interações relevantes do usuário** durante um exame, como:
+O objetivo do Argus é registrar **comportamentos relevantes do usuário** durante uma avaliação, permitindo:
 
-- Teclas pressionadas
-- Cliques do mouse
-- Perda e ganho de foco da janela (Alt+Tab, troca de janelas)
-- Identificação de aluno e prova
-- Associação de eventos a uma sessão única
-
-Esses dados permitem **auditoria posterior**, análise de comportamento e integração com sistemas de monitoramento adicionais (como o ArgusVision).
+- Auditoria posterior
+- Análise de conduta
+- Correlação com monitoramento visual (ArgusVision)
+- Associação de eventos a uma sessão única de prova
 
 ---
 
-## 🧩 Arquitetura
+## 🧩 O que o Argus monitora
 
-O Argus funciona como um **plugin Eclipse (RCP/SWT)** e é composto por:
+Atualmente, o Argus monitora:
 
-- **ArgusApp**  
-  Ponto de entrada do plugin. Solicita identificação do aluno e da prova, inicia a sessão no servidor e ativa o monitoramento.
+- Teclas pressionadas
+- Ganho e perda de foco da janela (Alt+Tab, troca de aplicações)
+- Identificação do aluno
+- Identificação da prova
+- Associação de todos os eventos a uma **sessão ativa**
 
-- **SharedContext**  
-  Armazena globalmente o aluno, prova e identificador da sessão.
+> ⚠️ **Observação:**  
+> A monitoração de mouse foi **removida intencionalmente** do projeto, mantendo o foco em eventos realmente relevantes para análise de comportamento durante provas.
 
-- **EventManager**  
-  Registra eventos de teclado, mouse e foco da janela usando listeners SWT.
+---
 
-- **EventLogger**  
-  Responsável por:
-  - Persistir eventos localmente em arquivos (`.log` ou `.json`)
-  - Enviar eventos de forma assíncrona ao servidor HTTP
+## 🏗️ Arquitetura
 
-- **ConfigLoader**  
-  Carrega configurações externas (ex: URL do servidor).
+O Argus funciona como um **plugin Eclipse (RCP / SWT)** e é composto pelos seguintes módulos principais:
+
+### 🔹 ArgusApp
+Ponto de entrada do plugin.
+- Solicita identificação do aluno e da prova
+- Inicializa a sessão no servidor
+- Ativa o monitoramento de eventos
+
+### 🔹 SharedContext
+Armazena globalmente:
+- Nome do aluno
+- Nome da prova
+- Identificador da sessão ativa
+
+### 🔹 EventManager
+Responsável por capturar eventos do Eclipse:
+- Teclado
+- Foco da janela  
+Utiliza listeners SWT nativos.
+
+### 🔹 EventLogger
+Responsável por:
+- Persistir eventos localmente (TXT / JSON)
+- Enviar eventos de forma assíncrona via HTTP para o servidor ArgusServer
+
+### 🔹 ConfigLoader
+Carrega configurações externas, como:
+- URL do servidor
+- Parâmetros de envio
 
 ---
 
 ## 📡 Comunicação com o Servidor
-- Envio de eventos:
 
-O plugin envia eventos no formato JSON via HTTP para o backend:
+Os eventos são enviados ao backend no formato JSON via HTTP.
+
 Exemplo:
-{"type":"focus","action":"FOCUS_LOST","time":1766104235598,"student":"Aldebaran","exam":"ProvaRedes"},
-{"type":"focus","action":"FOCUS_GAINED","time":1766104402035,"student":"Aldebaran","exam":"ProvaRedes"}
+```json
+{
+  "type": "focus",
+  "action": "FOCUS_LOST",
+  "timestamp": 1766104235598,
+  "student": "Aldebaran",
+  "exam": "ProvaRedes"
+}
+```
+---
 
-## ArgusLogs
-
-Os arquivos são separados por data e sessão, facilitando auditoria offline.
+### 🗂️ Logs Locais
+Os eventos também são registrados localmente:
+- Arquivos separados por sessão
+- Úteis para auditoria offline
+- Servem como contingência em caso de falha de comunicação
 
 ---
 
-## ⚙️ Requisitos
-
+### ⚙️ Requisitos
 - Java 11 ou superior
 - Eclipse IDE (com suporte a plugins RCP)
-- Servidor Argus em execução
+- ArgusServer em execução
 
 ---
 
-## ▶️ Execução
+### ▶️ Execução
+Instale o plugin no Eclipse
+Inicie o Eclipse normalmente
+Ative o Argus
 
-1. Instale o plugin no Eclipse
-2. Inicie o Eclipse normalmente
-3. Ao ativar o Argus:
-   - Informe o nome do aluno
-   - Informe o nome da prova
-4. O monitoramento começa automaticamente
-
----
-
-## 🔐 Observações
-
-- O Argus **não interfere** no funcionamento do Eclipse
-- O envio de eventos é tolerante a falhas de rede
-- O sistema foi projetado para ser extensível
+Informe:
+- Nome do aluno
+- Nome da prova
+O monitoramento inicia automaticamente
 
 ---
 
-## 📌 Projeto relacionado
+### 🔐 Observações
+O Argus não interfere no funcionamento do Eclipse
+Nenhuma ação do usuário é bloqueada
+O sistema foi projetado para ser extensível e modular
 
-- **ArgusServer** — Backend de coleta e classificação de eventos
-- **ArgusVision** — Monitoramento visual via OpenCV
+---
+
+## 🔗 Projetos Relacionados
+- [ArgusServer](https://github.com/IsaacLuiz88/ArgusServer) — Backend central de coleta e análise
+- [ArgusVision](https://github.com/IsaacLuiz88/ArgusVision) — Monitoramento visual via OpenCV
+
+---
