@@ -86,10 +86,10 @@ public class EventManager {
 			if ((e.stateMask & SWT.CTRL) != 0) {
 
 				if (e.keyCode == 'v' || e.keyCode == 'V') {
-					sendSimpleEvent("keyboard", "CTRL_V_RAW");}
+					sendSimpleEvent("keyboard", "CTRL_V");}
 
 				if (e.keyCode == 'c' || e.keyCode == 'C') {
-					sendSimpleEvent("keyboard", "CTRL_C_RAW");}
+					sendSimpleEvent("keyboard", "CTRL_C");}
 			}
 
 			if (e.character != 0 && !Character.isISOControl(e.character)) {

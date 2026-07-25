@@ -57,6 +57,12 @@ public class ArgusApp extends AbstractHandler {
 		).thenAccept(response -> {
 		    if(response.statusCode() != 200) {
 		    	System.err.println("[Argus] Erro no servidor: " + response.statusCode());
+		    	display.asyncExec(() -> {
+		    		String msg = response.statusCode() == 409
+		    				? "Esta prova já foi encerrada pelo professor e não aceita mais novas sessões."
+		    				: "Não foi possível registrar a sessão no servidor (HTTP " + response.statusCode() + ").";
+		    		MessageDialog.openError(shell, "Argus", msg);
+		    	});
 	            return;
 		    }
 		    String body = response.body();
