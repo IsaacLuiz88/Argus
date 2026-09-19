@@ -19,14 +19,15 @@ Ele é a peça que "começa a história": sem ele, nem o servidor sabe que exist
 - Pede o nome do aluno e o identificador da prova, uma única vez, no login.
 - Registra a sessão no ArgusServer e mantém um "sinal de vida" (heartbeat) constante via WebSocket.
 - Fica de olho em eventos da IDE que podem indicar cola:
-  - `Ctrl+C` / `Ctrl+V` / `Ctrl+X` — tanto pelo atalho puro quanto pelo comando do Eclipse (dois sensores, um só evento real, mais difícil de escapar).
+  - `Ctrl+C` / `Ctrl+V` / `Ctrl+X` — capturados por dois sensores: o filtro de teclado (tecla pressionada) e o listener de comandos do Eclipse (copiar/colar/recortar executado, inclusive pelo menu). Os dois emitem a mesma ação (`CTRL_C`, `CTRL_V`), então um único atalho pode aparecer duas vezes no log.
   - Colagem de blocos grandes de texto de uma vez (mais de 50 caracteres numa janela curta) — o clássico "colei o código todo".
   - Perda e ganho de foco da janela do Eclipse (o aluno saiu pra outro lugar?).
   - Abertura do Marketplace, "Install New Software" ou "Check for Updates" — tentativas de instalar algo no meio da prova.
   - Inatividade prolongada (3 minutos sem digitar nada).
 - Varre os plugins instalados no Eclipse a cada 30 segundos e sinaliza se encontrar nomes de ferramentas de IA conhecidas (Copilot, Tabnine, Codeium, Amazon Q, ChatGPT/OpenAI, Blackbox...).
 - Ao final, avisa o servidor que está fechando (e recebe o comando de shutdown remoto do professor, se for o caso).
-- **Lança o [ArgusVision](../ArgusVision) automaticamente** assim que a sessão é confirmada — o aluno não precisa abrir mais nada por conta própria.
+- **Lança o [ArgusVision](../ArgusVision) automaticamente** assim que a sessão é confirmada, se `argusvision.enabled=true` (vem `false` por padrão) — o aluno não precisa abrir mais nada por conta própria.
+- Se o servidor recusar a sessão porque a prova já foi encerrada pelo professor (HTTP 409), mostra um diálogo de erro ao aluno e não inicia o monitoramento.
 
 ---
 
@@ -90,7 +91,7 @@ argusvision.libraryPath=
 ```
 
 Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true` e preencha:
-- `argusvision.jar` — caminho do `.jar` executável do ArgusVision nessa máquina.
+- `argusvision.jar` — caminho do `.jar` executável do ArgusVision nessa máquina. O plugin roda `java -jar <esse jar> <aluno>`, então o jar precisa ter `Main-Class` e as dependências embutidas; o build atual do ArgusVision ainda não gera isso (ver o README do ArgusVision).
 - `argusvision.libraryPath` — pasta com as bibliotecas nativas do OpenCV (necessário pro `System.loadLibrary` funcionar fora do Eclipse).
 - `argusvision.javaHome` — opcional; se vazio, usa o mesmo Java que roda o Eclipse.
 
@@ -116,7 +117,10 @@ Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true`
 
 - O plugin não impede nem bloqueia nenhuma ação do aluno — ele só observa.
 - Nomes de aluno/prova viram parte do UUID da sessão, então evite caracteres muito exóticos.
-- Se o servidor estiver fora do ar no momento do login, o plugin avisa e não inicia o monitoramento.
+- Se o servidor estiver fora do ar no momento do login, o erro só aparece no console do Eclipse: o plugin não inicia o monitoramento e não mostra aviso ao aluno. (Respostas de erro do servidor, como `409`, mostram diálogo.)
+- Ao receber o comando de encerramento do professor, o plugin fecha a janela e chama `System.exit(0)`, o que encerra o processo inteiro do Eclipse — trabalho não salvo é perdido.
+- A conexão WebSocket não se reconecta sozinha: se cair, o heartbeat para até o plugin ser iniciado de novo.
+- As mensagens JSON são montadas à mão (`String.format`) sem escapar aspas; nomes de aluno/prova com `"` ou `\` quebram o envio.
 
 ---
 
