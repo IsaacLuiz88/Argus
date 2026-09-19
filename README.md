@@ -1,4 +1,4 @@
-# 👁️ Argus — Plugin de Monitoramento para Eclipse
+# Argus — Plugin de Monitoramento para Eclipse
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
 ![Eclipse PDE](https://img.shields.io/badge/Eclipse-PDE%20Plugin-2C2255?logo=eclipseide&logoColor=white)
@@ -14,7 +14,7 @@ Ele é a peça que "começa a história": sem ele, nem o servidor sabe que exist
 
 ---
 
-## 🎯 O que ele faz
+## O que ele faz
 
 - Pede o nome do aluno e o identificador da prova, uma única vez, no login.
 - Registra a sessão no ArgusServer e mantém um "sinal de vida" (heartbeat) constante via WebSocket.
@@ -30,7 +30,7 @@ Ele é a peça que "começa a história": sem ele, nem o servidor sabe que exist
 
 ---
 
-## 🧩 Papel no ecossistema
+## Papel no ecossistema
 
 ```
         login do aluno
@@ -50,7 +50,7 @@ O Argus não bloqueia o aluno, não impede nenhuma ação — ele só **observa 
 
 ---
 
-## 🏗️ Estrutura interna
+## Estrutura interna
 
 | Classe | Responsabilidade |
 |---|---|
@@ -69,7 +69,7 @@ O Argus não bloqueia o aluno, não impede nenhuma ação — ele só **observa 
 
 ---
 
-## ⚙️ Configuração
+## Configuração
 
 Tudo em `src/main/resources/config/config.properties`, dentro do plugin:
 
@@ -96,7 +96,7 @@ Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true`
 
 ---
 
-## ▶️ Como rodar
+## Como rodar
 
 ### Requisitos
 - Java 21
@@ -112,7 +112,7 @@ Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true`
 
 ---
 
-## 🔐 Observações
+## Observações
 
 - O plugin não impede nem bloqueia nenhuma ação do aluno — ele só observa.
 - Nomes de aluno/prova viram parte do UUID da sessão, então evite caracteres muito exóticos.
@@ -120,7 +120,7 @@ Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true`
 
 ---
 
-## 🔗 Projetos relacionados
+## Projetos relacionados
 
 - **[ArgusServer](https://github.com/IsaacLuiz88/ArgusServer)** — backend central, dashboard e persistência.
 - **[ArgusVision](https://github.com/IsaacLuiz88/ArgusVision)** — monitoramento visual via webcam, lançado automaticamente por este plugin.
