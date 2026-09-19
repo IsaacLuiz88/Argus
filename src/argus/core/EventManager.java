@@ -5,6 +5,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -38,6 +40,12 @@ public class EventManager {
 	private long lastCharWindow = System.currentTimeMillis();
 	private static final int PASTE_THRESHOLD = 50;
 	private static final long WINDOW_MS = 500;
+
+	// Atalho pressionado (filtro de teclado) e o comando do Eclipse que ele dispara
+	// geram a mesma acao; sem isso um unico Ctrl+V apareceria duas vezes.
+	private static final long SHORTCUT_DEDUPE_MS = 700;
+	private String lastShortcutAction = "";
+	private long lastShortcutTime = 0;
 
 	private ScheduledExecutorService pluginScheduler;
 
@@ -86,10 +94,10 @@ public class EventManager {
 			if ((e.stateMask & SWT.CTRL) != 0) {
 
 				if (e.keyCode == 'v' || e.keyCode == 'V') {
-					sendSimpleEvent("keyboard", "CTRL_V");}
+					sendShortcutEvent("CTRL_V");}
 
 				if (e.keyCode == 'c' || e.keyCode == 'C') {
-					sendSimpleEvent("keyboard", "CTRL_C");}
+					sendShortcutEvent("CTRL_C");}
 			}
 
 			if (e.character != 0 && !Character.isISOControl(e.character)) {
@@ -97,8 +105,11 @@ public class EventManager {
 
 			if (now - lastCharWindow > WINDOW_MS) {
 
+				// 50+ teclas de texto em ~500 ms nao e digitacao humana (macro/automacao).
+				// NAO e colagem: um Ctrl+V gera uma tecla so; a colagem e tratada em
+				// postExecuteSuccess (comando paste + tamanho da area de transferencia).
 				if (typedChars >= PASTE_THRESHOLD) {
-					sendSimpleEvent("Insercao_Copia_Cola", "Inserção_de_Texto_Grande");}
+					sendSimpleEvent("Insercao_Copia_Cola", "Digitacao_Anormalmente_Rapida");}
 
 				typedChars = 0;
 				lastCharWindow = now;
@@ -172,11 +183,16 @@ public class EventManager {
 				switch (commandId) {
 
 				case "org.eclipse.ui.edit.copy":
-					sendSimpleEvent("keyboard", "CTRL_C");
+					sendShortcutEvent("CTRL_C");
 					break;
 
 				case "org.eclipse.ui.edit.paste":
-					sendSimpleEvent("keyboard", "CTRL_V");
+					sendShortcutEvent("CTRL_V");
+					// Colagem grande de verdade: mede o texto que estava na area de
+					// transferencia quando o comando paste executou (atalho, menu ou botao).
+					if (clipboardTextLength() >= PASTE_THRESHOLD) {
+						sendSimpleEvent("Insercao_Copia_Cola", "Inserção_de_Texto_Grande");
+					}
 					break;
 
 				case "org.eclipse.ui.edit.cut":
@@ -282,6 +298,34 @@ public class EventManager {
 				System.currentTimeMillis(), studentName, examName, SharedContext.session());
 		sendEventAsync(json);
 		System.out.println(json);
+	}
+
+	// Envia CTRL_C/CTRL_V/CTRL_X evitando duplicar o mesmo atalho vindo das duas fontes
+	// (filtro de teclado + comando do Eclipse) em um intervalo curto.
+	private void sendShortcutEvent(String action) {
+		long now = System.currentTimeMillis();
+		synchronized (this) {
+			if (action.equals(lastShortcutAction) && now - lastShortcutTime < SHORTCUT_DEDUPE_MS) {
+				return;
+			}
+			lastShortcutAction = action;
+			lastShortcutTime = now;
+		}
+		sendSimpleEvent("keyboard", action);
+	}
+
+	// Tamanho, em caracteres, do texto atualmente na area de transferencia (0 se nao for texto).
+	// Precisa rodar na thread de UI (o comando do Eclipse ja executa nela).
+	private int clipboardTextLength() {
+		Clipboard clipboard = new Clipboard(display);
+		try {
+			Object contents = clipboard.getContents(TextTransfer.getInstance());
+			return contents instanceof String text ? text.length() : 0;
+		} catch (RuntimeException e) {
+			return 0;
+		} finally {
+			clipboard.dispose();
+		}
 	}
 
 	private void sendSimpleEvent(String type, String action) {
