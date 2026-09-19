@@ -75,7 +75,13 @@ public class CommandSocketClient implements WebSocket.Listener {
 			return; // URL inválida não melhora tentando de novo
 		}
 
-		httpClient.newWebSocketBuilder().buildAsync(uri, this).thenAccept(ws -> {
+		java.net.http.WebSocket.Builder builder = httpClient.newWebSocketBuilder();
+		String clientKey = ConfigLoader.getClientKey();
+		if (!clientKey.isEmpty()) {
+			builder.header("X-Argus-Key", clientKey);
+		}
+
+		builder.buildAsync(uri, this).thenAccept(ws -> {
 			if (stopped) {
 				ws.abort();
 				return;
@@ -86,6 +92,16 @@ public class CommandSocketClient implements WebSocket.Listener {
 			startHeartbeatOnce();
 
 		}).exceptionally(ex -> {
+			Throwable cause = (ex instanceof CompletionException && ex.getCause() != null) ? ex.getCause() : ex;
+			if (cause instanceof java.net.http.WebSocketHandshakeException handshake) {
+				int status = handshake.getResponse().statusCode();
+				if (status == 401 || status == 403) {
+					// Chave recusada: tentar de novo não resolve, só gera ruído.
+					System.err.println("[Argus] Servidor recusou o WebSocket (HTTP " + status
+							+ "): verifique security.clientKey. Sem novas tentativas.");
+					return null;
+				}
+			}
 			System.err.println("[Argus] Falha WS: " + ex.getMessage());
 			scheduleReconnect();
 			return null;

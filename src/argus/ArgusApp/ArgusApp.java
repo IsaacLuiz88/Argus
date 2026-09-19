@@ -47,10 +47,10 @@ public class ArgusApp extends AbstractHandler {
 		    SharedContext.exam()
 		);
 
-		HttpRequest request = HttpRequest.newBuilder()
+		HttpRequest request = ConfigLoader.withClientKey(HttpRequest.newBuilder()
 			    .uri(URI.create(ConfigLoader.getSessionUrl()))
 			    .header("Content-Type", "application/json")
-			    .POST(HttpRequest.BodyPublishers.ofString(json))
+			    .POST(HttpRequest.BodyPublishers.ofString(json)))
 			    .build();
 
 		client.sendAsync(request,HttpResponse.BodyHandlers.ofString()
@@ -60,6 +60,8 @@ public class ArgusApp extends AbstractHandler {
 		    	display.asyncExec(() -> {
 		    		String msg = response.statusCode() == 409
 		    				? "Esta prova já foi encerrada pelo professor e não aceita mais novas sessões."
+		    				: response.statusCode() == 401
+		    				? "O servidor recusou este computador (chave de acesso ausente ou inválida). Avise o professor."
 		    				: "Não foi possível registrar a sessão no servidor (HTTP " + response.statusCode() + ").";
 		    		MessageDialog.openError(shell, "Argus", msg);
 		    	});

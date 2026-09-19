@@ -60,10 +60,10 @@ public class EventLogger implements AutoCloseable {
 
 	private void sendToServer(String json) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest request = argus.config.ConfigLoader.withClientKey(HttpRequest.newBuilder()
                     .uri(URI.create(serverUrl))
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .POST(HttpRequest.BodyPublishers.ofString(json)))
                     .build();
 
             httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())

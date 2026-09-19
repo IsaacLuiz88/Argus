@@ -3,6 +3,7 @@ package argus.config;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -130,6 +131,17 @@ public class ConfigLoader {
         if (url != null) {return "ws" + url.substring(4) + "/ws-command";}
         return resolve(prop.getProperty(
                 "server.ws", "ws://localhost:8080/ws-command"));
+    }
+
+    // Chave de acesso do servidor (security.clientKey, ver AccessFilter no ArgusServer).
+    // Vazia = o servidor não exige. Melhor no ~/.argus/config.properties do que no jar.
+    public static String getClientKey() {
+        return prop.getProperty("security.clientKey", "").trim();
+    }
+
+    public static HttpRequest.Builder withClientKey(HttpRequest.Builder builder) {
+        String key = getClientKey();
+        return key.isEmpty() ? builder : builder.header("X-Argus-Key", key);
     }
 
     public static boolean isArgusVisionEnabled() {
