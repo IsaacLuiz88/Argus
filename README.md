@@ -20,12 +20,14 @@ Ele é a peça que "começa a história": sem ele, nem o servidor sabe que exist
 - Registra a sessão no ArgusServer e mantém um "sinal de vida" (heartbeat) constante via WebSocket.
 - Fica de olho em eventos da IDE que podem indicar cola:
   - `Ctrl+C` / `Ctrl+V` / `Ctrl+X` — capturados por dois sensores: o filtro de teclado (tecla pressionada) e o listener de comandos do Eclipse (copiar/colar/recortar executado, inclusive pelo menu). Os dois emitem a mesma ação (`CTRL_C`, `CTRL_V`), então um único atalho pode aparecer duas vezes no log.
-  - Colagem de blocos grandes de texto de uma vez (mais de 50 caracteres numa janela curta) — o clássico "colei o código todo".
+  - Colagem de blocos grandes de texto: quando o comando `paste` do Eclipse executa (atalho, menu ou botão), lê o tamanho do texto que estava na área de transferência e alerta se passar de 50 caracteres — o clássico "colei o código todo".
+  - Digitação anormalmente rápida (50 ou mais teclas de texto em cerca de 500 ms), que não é humana e indica macro/automação. É um alerta separado do de colagem.
   - Perda e ganho de foco da janela do Eclipse (o aluno saiu pra outro lugar?).
-  - Abertura do Marketplace, "Install New Software" ou "Check for Updates" — tentativas de instalar algo no meio da prova.
+  - Abertura do Marketplace, "Install New Software" ou "Check for Updates" — tentativas de instalar algo no meio da prova. Além de registrar, o plugin **fecha essa janela** na hora (ver Observações).
   - Inatividade prolongada (3 minutos sem digitar nada).
 - Varre os plugins instalados no Eclipse a cada 30 segundos e sinaliza se encontrar nomes de ferramentas de IA conhecidas (Copilot, Tabnine, Codeium, Amazon Q, ChatGPT/OpenAI, Blackbox...).
-- Ao final, avisa o servidor que está fechando (e recebe o comando de shutdown remoto do professor, se for o caso).
+- Ao final, avisa o servidor que está fechando. Quando o professor manda encerrar, o plugin para o monitoramento e fecha a janela do Eclipse pelo caminho normal (o Eclipse pergunta sobre arquivos não salvos).
+- Se o WebSocket cair (rede, servidor reiniciando), reconecta sozinho com espera crescente (1, 2, 4, 8 e 15 s de teto) e o heartbeat volta.
 - **Lança o [ArgusVision](../ArgusVision) automaticamente** assim que a sessão é confirmada, se `argusvision.enabled=true` (vem `false` por padrão) — o aluno não precisa abrir mais nada por conta própria.
 - Se o servidor recusar a sessão porque a prova já foi encerrada pelo professor (HTTP 409), mostra um diálogo de erro ao aluno e não inicia o monitoramento.
 
@@ -47,7 +49,7 @@ Ele é a peça que "começa a história": sem ele, nem o servidor sabe que exist
    └─────────────────────┘
 ```
 
-O Argus não bloqueia o aluno, não impede nenhuma ação — ele só **observa e reporta**. Quem decide o que fazer com essa informação é o professor, olhando o dashboard.
+O Argus **observa e reporta**; a única intervenção é fechar janelas de instalação/atualização de plugins (ver Observações). Quem decide o que fazer com essa informação é o professor, olhando o dashboard.
 
 ---
 
@@ -72,7 +74,22 @@ O Argus não bloqueia o aluno, não impede nenhuma ação — ele só **observa 
 
 ## Configuração
 
-Tudo em `src/main/resources/config/config.properties`, dentro do plugin:
+**Por máquina, sem recompilar o plugin:** crie `~/.argus/config.properties` (na pasta do usuário; ou aponte outro caminho com `-Dargus.config=...`). O que estiver nesse arquivo sobrescreve os valores embutidos no `.jar`, e o **ArgusVision lê o mesmo arquivo**, então o endereço do servidor é configurado uma vez só por computador:
+
+```properties
+# Servidor (resolve HTTP e WebSocket; https vira wss)
+server.url=https://argus.onrender.com
+
+# Chave de acesso, se o servidor exigir (argus.security.client-key no ArgusServer)
+security.clientKey=troque-por-uma-chave-longa
+
+# Lançamento automático do ArgusVision (opcional)
+argusvision.enabled=true
+argusvision.jar=C:/argus/ArgusVision.jar
+argusvision.libraryPath=C:/opencv/build/java/x64
+```
+
+**Valores padrão embutidos** em `src/main/resources/config/config.properties` (servidor na mesma máquina):
 
 ```properties
 server.host=localhost
@@ -83,15 +100,16 @@ server.event=${server.base}/api/event
 server.session=${server.base}/api/session/start
 server.ws=ws://${server.host}:${server.port}/ws-command
 
-# ArgusVision - iniciado automaticamente logo apos o login do aluno
 argusvision.enabled=false
 argusvision.jar=
 argusvision.javaHome=
 argusvision.libraryPath=
 ```
 
+`server.url`, quando presente, vale mais que `server.host/port/base/event/session/ws`. Sem arquivo externo, o comportamento é o padrão acima (localhost:8080).
+
 Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true` e preencha:
-- `argusvision.jar` — caminho do `.jar` executável do ArgusVision nessa máquina. O plugin roda `java -jar <esse jar> <aluno>`, então o jar precisa ter `Main-Class` e as dependências embutidas; o build atual do ArgusVision ainda não gera isso (ver o README do ArgusVision).
+- `argusvision.jar` — caminho do `ArgusVision.jar` gerado por `mvn package` no projeto ArgusVision. Mantenha a pasta `lib/` (com o jar do OpenCV) ao lado dele. O plugin roda `java -jar <esse jar> <aluno>`.
 - `argusvision.libraryPath` — pasta com as bibliotecas nativas do OpenCV (necessário pro `System.loadLibrary` funcionar fora do Eclipse).
 - `argusvision.javaHome` — opcional; se vazio, usa o mesmo Java que roda o Eclipse.
 
@@ -106,7 +124,7 @@ Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true`
 
 ### Passos
 1. Abra o projeto no Eclipse (`File > Import > Existing Projects into Workspace`).
-2. Ajuste `config.properties` com o endereço real do ArgusServer.
+2. Se o servidor não estiver em `localhost:8080`, crie o `~/.argus/config.properties` com `server.url` (ver Configuração).
 3. Rode como **Eclipse Application** (cria uma segunda instância do Eclipse com o plugin instalado) ou exporte como plugin implantável (`Export > Deployable plug-ins and fragments`) e coloque o `.jar` gerado na pasta `dropins/` de uma instalação do Eclipse.
 4. Na instância com o plugin, use o atalho **`Ctrl+6`** ou o menu **Argus Menu > Argus Command** pra abrir o login.
 5. Informe seu nome e o código da prova — a partir daí, o Argus assume o resto sozinho.
@@ -115,12 +133,13 @@ Pra ligar o auto-launch do ArgusVision, troque `argusvision.enabled` para `true`
 
 ## Observações
 
-- O plugin não impede nem bloqueia nenhuma ação do aluno — ele só observa.
-- Nomes de aluno/prova viram parte do UUID da sessão, então evite caracteres muito exóticos.
-- Se o servidor estiver fora do ar no momento do login, o erro só aparece no console do Eclipse: o plugin não inicia o monitoramento e não mostra aviso ao aluno. (Respostas de erro do servidor, como `409`, mostram diálogo.)
-- Ao receber o comando de encerramento do professor, o plugin fecha a janela e chama `System.exit(0)`, o que encerra o processo inteiro do Eclipse — trabalho não salvo é perdido.
-- A conexão WebSocket não se reconecta sozinha: se cair, o heartbeat para até o plugin ser iniciado de novo.
+- O plugin **observa e reporta**, com uma exceção: quando abre uma janela cujo título contém "marketplace", "install"/"instalar" ou "update"/"atualizar", ele registra o evento e **fecha a janela**. A checagem é só pelo título, então também pega usos legítimos (por exemplo "Update Maven Project"). O plugin não bloqueia nenhuma outra ação.
+- Nomes de aluno/prova com espaço e acento funcionam: o servidor gera identificadores de sessão só com ASCII seguro (`Angela_Maria_Prova_1_ab12cd34`).
+- Se o servidor estiver fora do ar no momento do login, o erro só aparece no console do Eclipse: o plugin não inicia o monitoramento e não mostra aviso ao aluno. Respostas de erro do servidor mostram diálogo (`409` prova encerrada, `401` computador recusado por chave inválida).
+- Um servidor que só cai *depois* do login não é problema: o WebSocket reconecta sozinho. Se o servidor recusar a chave (`401`/`403`) no WebSocket, o plugin para de tentar e registra o motivo.
+- O plugin não chama mais `System.exit`: ao encerrar, ele remove os listeners que registrou e fecha a janela do Eclipse normalmente. Se o aluno cancelar a pergunta sobre arquivos não salvos, o Eclipse continua aberto, mas o monitoramento já parou.
 - As mensagens JSON são montadas à mão (`String.format`) sem escapar aspas; nomes de aluno/prova com `"` ou `\` quebram o envio.
+- O `EventManager` e o restante do plugin foram compilados contra os jars do Eclipse e o cliente WebSocket foi exercitado contra o servidor, mas o comportamento dentro da IDE (por exemplo o alerta de colagem) depende de teste manual no Eclipse.
 
 ---
 
