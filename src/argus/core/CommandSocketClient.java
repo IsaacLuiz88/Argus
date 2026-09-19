@@ -1,6 +1,8 @@
 package argus.core;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.util.concurrent.*;
@@ -19,7 +21,17 @@ public class CommandSocketClient implements WebSocket.Listener {
 
 	public void connect() {
 		String wsBase = ConfigLoader.getWebSocketUrl();
-		URI uri = URI.create(wsBase + "/" + SharedContext.session());
+		// O id da sessão pode ter espaço/acento (ex.: sessões antigas com o nome completo):
+		// sem codificar, URI.create lança exceção e o WebSocket (heartbeat) nunca conecta.
+		String sessionSegment = URLEncoder.encode(SharedContext.session(), StandardCharsets.UTF_8)
+				.replace("+", "%20");
+		URI uri;
+		try {
+			uri = URI.create(wsBase + "/" + sessionSegment);
+		} catch (IllegalArgumentException e) {
+			System.err.println("[Argus] URL do WebSocket inválida: " + e.getMessage());
+			return;
+		}
 
 		HttpClient.newHttpClient().newWebSocketBuilder().buildAsync(uri, this).thenAccept(ws -> {
 			this.webSocket = ws;
